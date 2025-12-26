@@ -2,26 +2,27 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import xgboost as xgb
+import pickle
 from sklearn.preprocessing import StandardScaler
-import pickle  # عشان نحمل الـ scaler لو حفظناه
 
-# تحميل الموديل بطريقة XGBoost الصحيحة
 @st.cache_resource
 def load_model():
+    # الطريقة الأكثر أمانًا لتحميل الموديل في الإصدارات الحديثة
+    booster = xgb.Booster()
+    booster.load_model('employee_promotion_model.json')
     model = xgb.XGBClassifier()
-    model.load_model('employee_promotion_model.json')  # <-- اسم الملف اللي رفعتيه
+    model._Booster = booster
     return model
 
-# لو حفظتي الـ scaler في النوتبوك، هنحمله كمان
-# (لو ما حفظتيهوش، قوليلي وأقولك تحفظيه في النوتبوك دلوقتي)
 @st.cache_resource
 def load_scaler():
     with open('scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
     return scaler
 
+# تحميل الموديل والـ scaler
 model = load_model()
-scaler = load_scaler()  # <-- مهم جدًا
+scaler = load_scaler()
 
 st.set_page_config(page_title="Employee Promotion Prediction", page_icon="👔", layout="centered")
 st.title("👔 Employee Promotion Prediction")
@@ -46,7 +47,7 @@ with col2:
                            'region_4', 'region_26', 'region_16', 'region_27', 'region_10', 'Other'])
     age = st.slider("Age", 18, 60, 35)
     length_of_service = st.slider("Years of Service", 1, 37, 5)
-    previous_year_rating = st.selectbox("Previous Year Rating", [1, 2, 3, 4, 5], index=2)
+    previous_year_rating = st.selectbox("Previous Year Rating", [1.0, 2.0, 3.0, 4.0, 5.0], index=2)
     awards_won = st.selectbox("Awards Won?", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
     avg_training_score = st.slider("Average Training Score", 39, 99, 75)
 
@@ -60,14 +61,14 @@ if st.button("🔮 Predict Promotion", type="primary"):
             'recruitment_channel': recruitment_channel,
             'no_of_trainings': no_of_trainings,
             'age': age,
-            'previous_year_rating': previous_year_rating,
+            'previous_year_rating': float(previous_year_rating),
             'length_of_service': length_of_service,
             'awards_won': awards_won,
             'avg_training_score': avg_training_score
         }
         df = pd.DataFrame([data])
 
-        # Feature Engineering (نفس اللي عملتيه في النوتبوك)
+        # Feature Engineering
         df['age_log'] = np.log1p(df['age'])
         df['length_of_service_log'] = np.log1p(df['length_of_service'])
 
@@ -78,12 +79,12 @@ if st.button("🔮 Predict Promotion", type="primary"):
         cat_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
         df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
 
-        # Scaling باستخدام نفس الـ scaler المحفوظ
+        # Scaling
         num_cols = ['no_of_trainings', 'age', 'length_of_service', 'avg_training_score',
                     'age_log', 'length_of_service_log']
-        df[num_cols] = scaler.transform(df[num_cols])  # <-- transform بس، مش fit_transform
+        df[num_cols] = scaler.transform(df[num_cols])
 
-        # التنبؤ
+        # Prediction
         prob = model.predict_proba(df)[0][1]
         pred = model.predict(df)[0]
 
@@ -96,4 +97,4 @@ if st.button("🔮 Predict Promotion", type="primary"):
 
     st.info("Model trained on augmented data (300k records) using XGBoost")
 
-st.caption("Employee Promotion Prediction Project • Developed by [Your Name]")
+st.caption("Employee Promotion Prediction Project • Developed by Salma")
