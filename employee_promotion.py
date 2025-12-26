@@ -15,8 +15,6 @@ Original file is located at
 
 # ==================== Libraries ====================
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 from datetime import datetime
 from sklearn.impute import SimpleImputer
@@ -281,8 +279,8 @@ print("\n The big data has been saved in a file'employee_promotion_300k.csv'")
 """
 
 # style
-plt.style.use('seaborn-v0_8')
-sns.set_palette("husl")
+
+
 
 # Categorical Selection
 categorical_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
@@ -298,25 +296,20 @@ n_cols = len(categorical_cols)
 n_rows = (n_cols + 1) // 2
 
 # Increase the size a bit because the data is large and there are many labels (especially region and department)
-plt.figure(figsize=(18, 6 * n_rows))  # Increased the width and height
+  # Increased the width and height
 
 for i, feature in enumerate(categorical_cols):
-    plt.subplot(n_rows, 2, i + 1)
+    
 
     # We only show the top 10 categories so the plot doesn’t get crowded (very important for region and department)
     top_values = df[feature].value_counts().head(10).index
     plot_data = df[df[feature].isin(top_values)]
 
-    ax = sns.countplot(x=feature, data=plot_data,
-                       order=top_values,
-                       palette='viridis')
-
-    plt.title(f'Distribution of {feature} (Top 10)', fontsize=14, fontweight='bold')
-    plt.xlabel(feature)
-    plt.ylabel('Count')
+   
+   
 
     # Rotate the labels 90 degrees so you can read them properly
-    plt.xticks(rotation=90)
+    
 
     # Add the numbers above the bars
     for p in ax.patches:
@@ -328,8 +321,7 @@ for i, feature in enumerate(categorical_cols):
                     ha='center', va='bottom', fontsize=10, color='black')
 
 # Improving distances
-plt.tight_layout(pad=5.0)
-plt.show()
+
 
 """**Target Imbalance Check**"""
 
@@ -384,8 +376,7 @@ for col in numerical_analysis_cols:
         print("  → Distribution is acceptable (no transformation needed)")
 
     print()  # empty line for readability# Set plot style for better visuals
-plt.style.use('seaborn-v0_8')
-sns.set_palette("deep")
+
 
 # Calculate imbalance metrics
 total_employees = len(data)
@@ -401,10 +392,10 @@ print(f"Promoted (1): {promoted_count:,} ({promotion_rate:.2f}%)")
 print(f"Imbalance Ratio (0:1): {not_promoted_count // promoted_count : 1}")
 
 # Create the plot
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), gridspec_kw={'width_ratios': [2, 1]})
+fig, (ax1, ax2) =  gridspec_kw={'width_ratios': [2, 1]})
 
 # Left: Count plot with numbers on top
-sns.countplot(x='is_promoted', data=data, ax=ax1, palette='Set2')
+
 ax1.set_title('Distribution of Target Variable (is_promoted)', fontsize=14, fontweight='bold')
 ax1.set_xlabel('Is Promoted', fontsize=12)
 ax1.set_ylabel('Number of Employees', fontsize=12)
@@ -431,8 +422,7 @@ ax2.set_title('Promotion Rate Proportion', fontsize=14, fontweight='bold')
 fig.suptitle(f'Class Imbalance Detected – Promotion Rate: {promotion_rate:.2f}%',
              fontsize=16, fontweight='bold', color='darkred', y=1.02)
 
-plt.tight_layout()
-plt.show()
+
 
 # Recommendation note
 print("\nNote: This is a highly imbalanced dataset.")
@@ -641,21 +631,10 @@ custom_palette = {0: '#132440',   # Dark blue-gray for Not Promoted
                   1: '#FDB5CE'}   # Light pink for Promoted
 
 # Create the pairplot with custom colors
-sns.pairplot(
-    data=df,
-    vars=primary_numerical_cols,
-    hue='is_promoted',
-    diag_kind='kde',                    # Smooth density on diagonal
-    palette=custom_palette,             # Your chosen colors
-    plot_kws={'alpha': 0.6, 's': 30},    # Transparency and slightly larger points for visibility
-    diag_kws={'shade': True, 'alpha': 0.8}
-)
+
 
 #  title
-plt.suptitle('Pairwise Relationships of Key Numerical Features\nColored by Promotion Status',
-             fontsize=16, fontweight='bold', y=1.02)
 
-plt.show()
 
 # Quick note
 print("Colors used:")
@@ -679,44 +658,22 @@ n_features = len(categorical_features)
 n_rows = (n_features + 1) // 2  # 2 plots per row
 
 # Larger figure size for clarity (especially with long category names like department/region)
-plt.figure(figsize=(18, 7 * n_rows))
+
 
 for i, cat_feature in enumerate(categorical_features):
-    plt.subplot(n_rows, 2, i + 1)
+    
 
     # Create boxplot: x = categorical, y = numerical
     # Order categories by median avg_training_score for better insight
     order = df.groupby(cat_feature)[numerical_feature].median().sort_values(ascending=False).index
 
-    sns.boxplot(
-        x=cat_feature,
-        y=numerical_feature,
-        data=df,
-        order=order,                    # Sort boxes by median value (very insightful!)
-        palette='husl',                 # Beautiful colors
-        linewidth=2,                    # Thicker lines for clarity
-        fliersize=3                     # Smaller outliers to avoid clutter
-    )
-
+    
     # Titles and labels
-    plt.title(f'{numerical_feature} Distribution by {cat_feature}',
-              fontsize=15, fontweight='bold', pad=15)
-    plt.xlabel(cat_feature, fontsize=12)
-    plt.ylabel(numerical_feature, fontsize=12)
-
-    # Rotate x-labels for long category names (e.g., department names)
-    plt.xticks(rotation=45, ha='right', fontsize=11)
-
-    # Optional: Add grid for easier reading
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-
+   
 # Overall title
-plt.suptitle(f'How {numerical_feature} Varies Across Categorical Features\n(Sorted by Median Score)',
-             fontsize=18, fontweight='bold', y=1.02)
 
 # Adjust layout to prevent overlap
-plt.tight_layout(pad=4.0)
-plt.show()
+
 
 # Insight summary
 print("=== Key Insights from Boxplots ===")
@@ -740,10 +697,10 @@ n_features = len(categorical_cols_for_target)
 n_rows = (n_features + 1) // 2  # 2 plots per row
 
 # Large figure size for clarity, especially with many categories (e.g., department, region)
-plt.figure(figsize=(20, 6 * n_rows))
+
 
 for i, feature in enumerate(categorical_cols_for_target):
-    plt.subplot(n_rows, 2, i + 1)
+    
 
     # Calculate promotion rate (mean of is_promoted) per category
     promotion_rate = df.groupby(feature)[target_variable].mean()
@@ -752,15 +709,7 @@ for i, feature in enumerate(categorical_cols_for_target):
     order = promotion_rate.sort_values(ascending=False).index
 
     # Create barplot
-    ax = sns.barplot(
-        x=feature,
-        y=target_variable,
-        data=df,
-        order=order,                    # Sorted bars
-        palette='viridis',              #  color scheme
-        errorbar=None,                  # Remove confidence intervals for cleaner look
-        linewidth=2                     # Thicker bar edges
-    )
+    
 
     # Add percentage labels on top of each bar
     for p in ax.patches:
@@ -771,23 +720,7 @@ for i, feature in enumerate(categorical_cols_for_target):
                 ha='center', va='bottom', fontsize=11, fontweight='bold')
 
     # Titles and labels
-    plt.title(f'Promotion Rate by {feature}', fontsize=15, fontweight='bold', pad=15)
-    plt.xlabel(feature, fontsize=12)
-    plt.ylabel('Promotion Rate', fontsize=12)
-
-    # Rotate x-labels for long names (e.g., department names)
-    plt.xticks(rotation=45, ha='right', fontsize=11)
-
-    # Optional: Add horizontal grid for easier comparison
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-# Overall title
-plt.suptitle('Promotion Rate Across Categorical Features\n(Sorted by Highest Rate)',
-             fontsize=18, fontweight='bold', y=1.02)
-
-# Adjust layout to prevent overlap
-plt.tight_layout(pad=4.0)
-plt.show()
+    
 
 # Summary insights
 print("=== Key Insights from Promotion Rate Barplots ===")
@@ -875,7 +808,7 @@ promoted = df_sample[df_sample[target_col] == 1]
 not_promoted = df_sample[df_sample[target_col] == 0]
 
 # Create figure and 3D axis
-fig = plt.figure(figsize=(14, 10))
+
 ax = fig.add_subplot(111, projection='3d')
 
 # Plot Not Promoted (majority class) - larger group, lower opacity
@@ -907,8 +840,7 @@ ax.set_xlabel(x_feature.upper(), fontsize=13, labelpad=10)
 ax.set_ylabel(y_feature.upper(), fontsize=13, labelpad=10)
 ax.set_zlabel(z_feature.upper(), fontsize=13, labelpad=10)
 
-plt.title('3D Scatter Plot: Age, Length of Service, and Average Training Score\nColored by Promotion Status',
-          fontsize=16, fontweight='bold', pad=20)
+
 
 # Legend
 ax.legend(fontsize=12, loc='upper left')
@@ -919,8 +851,7 @@ ax.view_init(elev=20, azim=45)  # Adjust these values if needed (try 30, 60 etc.
 # Grid for better depth perception
 ax.grid(True)
 
-plt.tight_layout()
-plt.show()
+
 
 # Insight note
 print("\n=== Insights from 3D Plot ===")
@@ -981,40 +912,16 @@ pca_df = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
 pca_df['is_promoted'] = y_sample.values
 
 # 6. Visualization with your favorite colors + professional styling
-plt.figure(figsize=(12, 9))
 
 # Not Promoted - majority class
 not_promoted = pca_df[pca_df['is_promoted'] == 0]
-plt.scatter(not_promoted['PC1'], not_promoted['PC2'],
-            c='#132440',          # Your dark blue-gray color
-            alpha=0.5,
-            s=40,
-            label=f'Not Promoted (0) - {len(not_promoted):,} points')
+
 
 # Promoted - minority class (highlight it)
 promoted = pca_df[pca_df['is_promoted'] == 1]
-plt.scatter(promoted['PC1'], promoted['PC2'],
-            c='#FDB5CE',          # Your light pink color
-            alpha=0.9,
-            s=60,
-            marker='^',
-            edgecolors='black',
-            linewidth=0.5,
-            label=f'Promoted (1) - {len(promoted):,} points')
+
 
 # Labels and title
-plt.xlabel(f'Principal Component 1 ({pca.explained_variance_ratio_[0]:.2%} variance)', fontsize=13)
-plt.ylabel(f'Principal Component 2 ({pca.explained_variance_ratio_[1]:.2%} variance)', fontsize=13)
-plt.title('PCA Visualization: Employee Promotion Patterns in Reduced 2D Space',
-          fontsize=16, fontweight='bold', pad=20)
-
-# Legend and grid
-plt.legend(fontsize=12, loc='best', frameon=True, fancybox=True, shadow=True)
-plt.grid(True, alpha=0.3)
-
-# Tight layout
-plt.tight_layout()
-plt.show()
 
 # 7. Explained Variance Report (very important for full mark!)
 print("\n=== PCA Explained Variance Report ===")
@@ -1390,8 +1297,7 @@ print("\nData quality validation complete. Dataset is logically consistent and r
 """**Visual check after cleaning**"""
 
 # Set style
-sns.set_style("whitegrid")
-plt.rcParams['figure.figsize'] = (12, 8)
+
 
 print("Generating Final Preprocessing Summary Visualizations...\n")
 
@@ -1409,39 +1315,23 @@ print(f"Final dataset shape: {df_final.shape[0]:,} rows × {df_final.shape[1]} c
 print(f"Features for visualization: {numerical_features}\n")
 
 # 1. Correlation Heatmap (after VIF confirmation - all low)
-plt.figure(figsize=(12, 9))
+
 correlation_matrix = df_final[numerical_features].corr()
 
-sns.heatmap(
-    correlation_matrix,
-    annot=True,
-    fmt=".2f",
-    cmap='coolwarm',
-    center=0,
-    linewidths=0.8,
-    linecolor='white',
-    cbar_kws={"shrink": 0.8},
-    square=True,
-    annot_kws={"size": 11, "weight": "bold"}
-)
 
-plt.title('Correlation Matrix of Key Numerical Features\n(Low Multicollinearity Confirmed by VIF)',
-          fontsize=16, fontweight='bold', pad=20)
-plt.xticks(rotation=45, ha='right')
-plt.yticks(rotation=0)
-plt.tight_layout()
-plt.show()
+
+
 
 # 2. Distribution Plots (Histograms + KDE) for each feature
 n_features = len(numerical_features)
 n_cols = 3
 n_rows = (n_features + n_cols - 1) // n_cols
 
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(18, 5 * n_rows))
+
 axes = axes.flatten()
 
 for i, col in enumerate(numerical_features):
-    sns.histplot(df_final[col], kde=True, ax=axes[i], color='#FDB5CE', bins=40, alpha=0.7)
+   
     axes[i].set_title(f'Distribution of {col}', fontsize=14, fontweight='bold')
     axes[i].set_xlabel(col)
     axes[i].set_ylabel('Frequency')
@@ -1451,16 +1341,14 @@ for i, col in enumerate(numerical_features):
 for j in range(i + 1, len(axes)):
     axes[j].set_visible(False)
 
-plt.suptitle('Feature Distributions After Preprocessing', fontsize=18, fontweight='bold', y=1.02)
-plt.tight_layout(pad=3.0)
-plt.show()
+
 
 # 3. Box Plots to visualize spread and outliers (without removal)
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(18, 5 * n_rows))
+
 axes = axes.flatten()
 
 for i, col in enumerate(numerical_features):
-    sns.boxplot(y=df_final[col], ax=axes[i], color='#132440', saturation=0.8)
+   
     axes[i].set_title(f'Box Plot of {col} (Outliers Preserved)', fontsize=14, fontweight='bold')
     axes[i].grid(True, axis='y', alpha=0.5)
 
@@ -1468,26 +1356,15 @@ for i, col in enumerate(numerical_features):
 for j in range(i + 1, len(axes)):
     axes[j].set_visible(False)
 
-plt.suptitle('Box Plots Showing Data Spread (Outliers Intentionally Kept)', fontsize=18, fontweight='bold', y=1.02)
-plt.tight_layout(pad=3.0)
-plt.show()
+
 
 # 4. Pairplot with sampling for clarity (full data would be too dense)
 sample_size = 12000
 df_sample = df_final.sample(n=sample_size, random_state=42)
 
-sns.pairplot(
-    df_sample[numerical_features + ['is_promoted']],
-    hue='is_promoted',
-    palette={0: '#132440', 1: '#FDB5CE'},  # Your colors
-    diag_kind='kde',
-    plot_kws={'alpha': 0.6, 's': 30},
-    corner=True  # Avoid duplication
-)
 
-plt.suptitle(f'Pairplot of Numerical Features (Sample of {sample_size:,} rows)\nColored by Promotion Status',
-             fontsize=18, fontweight='bold', y=1.02)
-plt.show()
+
+
 
 # Final summary
 print("\n=== Preprocessing Summary Complete ===")
@@ -1767,8 +1644,6 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score
 from xgboost import XGBClassifier
-from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
-from hyperopt.pyll.base import scope
 
 # 1. تحويل الأعمدة الـ categorical إلى category dtype (ضروري)
 categorical_cols = ['department', 'region', 'education', 'gender',
@@ -1886,8 +1761,7 @@ print(f"PR AUC: {pr_auc:.4f}")
 """
 
 from sklearn.metrics import classification_report, confusion_matrix, f1_score, accuracy_score, roc_auc_score, precision_recall_curve, auc, recall_score, precision_score
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 # Checking the predictions
 y_pred = final_model.predict(X_test)
@@ -1921,15 +1795,8 @@ print(f"Precision-Recall AUC      : {pr_auc:.4f}")
 # Confusion Matrix
 cm = confusion_matrix(y_test, y_pred)
 
-plt.figure(figsize=(8, 6))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=True,
-            xticklabels=['Not Promoted', 'Promoted'],
-            yticklabels=['Not Promoted', 'Promoted'])
-plt.title('Confusion Matrix', fontsize=16)
-plt.ylabel('Actual', fontsize=14)
-plt.xlabel('Predicted', fontsize=14)
-plt.tight_layout()
-plt.show()
+
+
 
 """**ROC Curve & Precision-Recall Curve**"""
 
@@ -1937,15 +1804,7 @@ from sklearn.metrics import roc_curve
 
 # ROC Curve
 fpr, tpr, _ = roc_curve(y_test, y_proba)
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.4f})', color='deepskyblue', linewidth=2)
-plt.plot([0, 1], [0, 1], 'k--', label='Random Classifier')
-plt.title('ROC-AUC Curve', fontsize=16)
-plt.xlabel('False Positive Rate', fontsize=14)
-plt.ylabel('True Positive Rate', fontsize=14)
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.show()
+
 
 print("\n\n\n")
 
@@ -1956,17 +1815,7 @@ precision, recall, _ = precision_recall_curve(y_test, y_proba)
 precision = np.ravel(precision)
 recall = np.ravel(recall)
 
-plt.figure(figsize=(8, 6))
-plt.plot(recall, precision, label=f'PR Curve (AUC = {pr_auc:.4f})', color='green', linewidth=2)
-plt.title('Precision-Recall Curve', fontsize=16)
-plt.xlabel('Recall', fontsize=14)
-plt.ylabel('Precision', fontsize=14)
-plt.legend(fontsize=12)
-plt.grid(True, alpha=0.3)
-plt.xlim([0, 1])
-plt.ylim([0, 1])
-plt.tight_layout()
-plt.show()
+
 
 """**Feature Importance**"""
 
@@ -1979,13 +1828,7 @@ importance_df = pd.DataFrame({
     'importance': importances
 }).sort_values(by='importance', ascending=False)
 
-plt.figure(figsize=(12, 8))
-sns.barplot(data=importance_df.head(15), x='importance', y='feature', palette='viridis')
-plt.title('Top 15 Feature Importances (XGBoost)', fontsize=16)
-plt.xlabel('Importance')
-plt.ylabel('Features')
-plt.tight_layout()
-plt.show()
+
 
 print("Top 10 Important Features:")
 print(importance_df.head(10))
