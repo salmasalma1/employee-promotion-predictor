@@ -21,25 +21,19 @@ st.write("Enter employee data to predict promotion probability")
 col1, col2 = st.columns(2)
 
 with col1:
-
 department = st.selectbox("Department",
-['Sales & Marketing', 'Operations', 'Procurement', 'Technology',
-'Finance', 'Analytics', 'R&D', 'HR', 'Legal', 'Other'])
-
+                         ['Sales & Marketing', 'Operations', 'Procurement', 'Technology',
+                          'Finance', 'Analytics', 'R&D', 'HR', 'Legal', 'Other'])
 education = st.selectbox("Qualification",
-["Below Secondary", "Bachelor's", "Master's & above", 'Other'])
-
+                         ["Below Secondary", "Bachelor's", "Master's & above", 'Other'])
 gender = st.selectbox("Gender", ['f', 'm'])
-
 recruitment_channel = st.selectbox("Recruitment Channel", ['sourcing', 'other', 'referred'])
-
 no_of_trainings = st.number_input("Number of Trainings", min_value=1, max_value=10, value=1)
 
 with col2:
-
 region = st.selectbox("Region",
-['region_2', 'region_22', 'region_7', 'region_15', 'region_13',
-'region_4', 'region_26', 'region_16', 'region_27', 'region_10', 'Other'])
+                     ['region_2', 'region_22', 'region_7', 'region_15', 'region_13',
+                      'region_4', 'region_26', 'region_16', 'region_27', 'region_10', 'Other'])
 age = st.slider("Age", min_value=18, max_value=60, value=35)
 length_of_service = st.slider("Years of Service", min_value=1, max_value=37, value=5)
 previous_year_rating = st.selectbox("Previous Year Rating", [1,2,3,4,5], index=2)
