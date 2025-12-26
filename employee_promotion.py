@@ -1761,7 +1761,7 @@ print("Precision-Recall AUC:", pr_auc)
 
 """**Model Training & Hyperparameter Tuning**"""
 
-!pip install hyperopt -q
+
 
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
@@ -1995,7 +1995,6 @@ print(importance_df.head(10))
 **step 1**
 """
 
-!pip install streamlit yfinance plotly pandas numpy scikit-learn --quiet
 
 import joblib
 
