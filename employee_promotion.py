@@ -85,20 +85,21 @@ if st.button("🔮 Predict Promotion", type="primary"):
         cat_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
         df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
 
-        # Scaling قبل الترتيب النهائي (الحل للـ KeyError)
+        # Scaling قبل الترتيب
         num_cols = ['no_of_trainings', 'age', 'length_of_service', 'avg_training_score',
                     'age_log', 'length_of_service_log']
         df[num_cols] = scaler.transform(df[num_cols])
 
-        # مطابقة الأعمدة مع التدريب
+        # مطابقة الأعمدة
         for col in required_columns:
             if col not in df.columns:
                 df[col] = 0
         df = df[required_columns]
 
-        # Prediction
-        prob = model.predict_proba(df)[0][1]
-        pred = model.predict(df)[0]
+        # تحويل لـ DMatrix و Prediction
+        dmatrix = xgb.DMatrix(df)
+        prob = model.predict(dmatrix)[0]
+        pred = 1 if prob > 0.5 else 0
 
     st.markdown(f"### Promotion Probability: **{prob:.1%}**")
     if pred == 1:
