@@ -1,20 +1,31 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
+import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
+import pickle  # عشان نحمل الـ scaler لو حفظناه
 
+# تحميل الموديل بطريقة XGBoost الصحيحة
 @st.cache_resource
 def load_model():
-    return joblib.load('employee_promotion_model.pkl')
+    model = xgb.XGBClassifier()
+    model.load_model('employee_promotion_model.json')  # <-- اسم الملف اللي رفعتيه
+    return model
+
+# لو حفظتي الـ scaler في النوتبوك، هنحمله كمان
+# (لو ما حفظتيهوش، قوليلي وأقولك تحفظيه في النوتبوك دلوقتي)
+@st.cache_resource
+def load_scaler():
+    with open('scaler.pkl', 'rb') as f:
+        scaler = pickle.load(f)
+    return scaler
 
 model = load_model()
+scaler = load_scaler()  # <-- مهم جدًا
 
 st.set_page_config(page_title="Employee Promotion Prediction", page_icon="👔", layout="centered")
-
 st.title("👔 Employee Promotion Prediction")
 st.markdown("### XGBoost model trained on 300,000 HR records")
-
 st.write("Enter employee details to predict the probability of promotion")
 
 col1, col2 = st.columns(2)
@@ -56,25 +67,27 @@ if st.button("🔮 Predict Promotion", type="primary"):
         }
         df = pd.DataFrame([data])
 
+        # Feature Engineering (نفس اللي عملتيه في النوتبوك)
         df['age_log'] = np.log1p(df['age'])
         df['length_of_service_log'] = np.log1p(df['length_of_service'])
 
         if department in ['Legal', 'Other']:
             df['department'] = 'Other'
 
+        # One-hot encoding
         cat_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
         df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
 
+        # Scaling باستخدام نفس الـ scaler المحفوظ
         num_cols = ['no_of_trainings', 'age', 'length_of_service', 'avg_training_score',
                     'age_log', 'length_of_service_log']
-        scaler = StandardScaler()
-        df[num_cols] = scaler.fit_transform(df[num_cols])
+        df[num_cols] = scaler.transform(df[num_cols])  # <-- transform بس، مش fit_transform
 
+        # التنبؤ
         prob = model.predict_proba(df)[0][1]
         pred = model.predict(df)[0]
 
     st.markdown(f"### Promotion Probability: **{prob:.1%}**")
-
     if pred == 1:
         st.success("🎉 The employee is likely to be promoted!")
         st.balloons()
