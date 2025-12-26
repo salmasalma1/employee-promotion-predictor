@@ -7,7 +7,6 @@ from sklearn.preprocessing import StandardScaler
 
 @st.cache_resource
 def load_model():
-    # الطريقة الأكثر أمانًا لتحميل الموديل في الإصدارات الحديثة
     booster = xgb.Booster()
     booster.load_model('employee_promotion_model.json')
     model = xgb.XGBClassifier()
@@ -20,9 +19,16 @@ def load_scaler():
         scaler = pickle.load(f)
     return scaler
 
-# تحميل الموديل والـ scaler
+@st.cache_resource
+def load_feature_columns():
+    with open('feature_columns.pkl', 'rb') as f:
+        columns = pickle.load(f)
+    return columns
+
+# تحميل كل حاجة
 model = load_model()
 scaler = load_scaler()
+required_columns = load_feature_columns()  # <-- جديد
 
 st.set_page_config(page_title="Employee Promotion Prediction", page_icon="👔", layout="centered")
 st.title("👔 Employee Promotion Prediction")
@@ -78,6 +84,12 @@ if st.button("🔮 Predict Promotion", type="primary"):
         # One-hot encoding
         cat_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
         df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
+
+        # تعديل الأعمدة عشان تبقى مطابقة تمامًا للتدريب
+        for col in required_columns:
+            if col not in df.columns:
+                df[col] = 0
+        df = df[required_columns]  # ترتيب بالضبط زي التدريب
 
         # Scaling
         num_cols = ['no_of_trainings', 'age', 'length_of_service', 'avg_training_score',
