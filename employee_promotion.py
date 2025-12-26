@@ -25,7 +25,6 @@ def load_feature_columns():
         columns = pickle.load(f)
     return columns
 
-# تحميل كل الملفات
 model = load_model()
 scaler = load_scaler()
 required_columns = load_feature_columns()
@@ -74,34 +73,29 @@ if st.button("🔮 Predict Promotion", type="primary"):
         }
         df = pd.DataFrame([data])
 
-        # Feature Engineering
         df['age_log'] = np.log1p(df['age'])
         df['length_of_service_log'] = np.log1p(df['length_of_service'])
 
         if department in ['Legal', 'Other']:
             df['department'] = 'Other'
 
-        # One-hot encoding
         cat_cols = ['department', 'region', 'education', 'gender', 'recruitment_channel']
         df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
 
-        # Scaling قبل الترتيب
         num_cols = ['no_of_trainings', 'age', 'length_of_service', 'avg_training_score',
                     'age_log', 'length_of_service_log']
         df[num_cols] = scaler.transform(df[num_cols])
 
-        # مطابقة الأعمدة
         for col in required_columns:
             if col not in df.columns:
                 df[col] = 0
         df = df[required_columns]
 
-        # تحويل لـ numpy array و DMatrix
         data_array = df.values
         dmatrix = xgb.DMatrix(data_array)
 
-        # Prediction مع probability
-        prob = model.get_booster().predict(dmatrix, output_margin=False)[0]
+        raw_score = model.get_booster().predict(dmatrix)[0]
+        prob = 1 / (1 + np.exp(-raw_score))
         pred = 1 if prob > 0.5 else 0
 
     st.markdown(f"### Promotion Probability: **{prob:.1%}**")
