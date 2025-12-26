@@ -91,11 +91,11 @@ if st.button("🔮 Predict Promotion", type="primary"):
                 df[col] = 0
         df = df[required_columns]
 
-        data_array = df.values
+        data_array = df.values.astype('float32')
         dmatrix = xgb.DMatrix(data_array)
 
-        raw_score = model.get_booster().predict(dmatrix)[0]
-        prob = 1 / (1 + np.exp(-raw_score))
+        raw_margin = model.get_booster().predict(dmatrix, output_margin=True)[0]
+        prob = 1 / (1 + np.exp(-raw_margin))
         pred = 1 if prob > 0.5 else 0
 
     st.markdown(f"### Promotion Probability: **{prob:.1%}**")
