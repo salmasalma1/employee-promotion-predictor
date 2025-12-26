@@ -7,8 +7,7 @@ from sklearn.preprocessing import StandardScaler
 # Loading the model
 @st.cache_resource
 def load_model():
-
-return joblib.load('employee_promotion_model.pkl')
+    return joblib.load('employee_promotion_model.pkl')
 
 model = load_model()
 
