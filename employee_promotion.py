@@ -51,8 +51,13 @@ st.markdown("""
 # تحميل الملفات
 @st.cache_resource
 def load_model():
+    import os
+    files = os.listdir('.')
+    st.write("الملفات الموجودة في الـ repo:", files)  # <-- سطر جديد عشان نشوف كل الفايلات
+
+    # شوفي القائمة اللي هتطلع، وابحثي عن اسم الموديل (مثل 'employee_promotion_model (1).json')
     booster = xgb.Booster()
-    booster.load_model('employee_promotion_model (1).json')  # غيري الاسم لو الملف عندك اسمه مختلف (مثل employee_promotion_model (1).json)
+    booster.load_model('employee_promotion_model.json')  # غيري الاسم ده لللي هيطلع في القائمة بالضبط
     model = xgb.XGBClassifier()
     model._Booster = booster
     return model
