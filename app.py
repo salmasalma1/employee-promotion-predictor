@@ -11,19 +11,20 @@ st.title("🚀 Employee Promotion Predictor")
 st.write("Enter employee details to predict their promotion status.")
 
 # Load the trained model and artifacts
-@st.cache_resource
-def load_model_artifacts():
-    try:
-        model = xgb.XGBClassifier()
-        model.load_model('employee_promotion_model.json')
-        scaler = joblib.load('scaler.pkl')
-        feature_columns = joblib.load('feature_columns.pkl')
-        return model, scaler, feature_columns
-    except FileNotFoundError as e:
-        st.error(f"Error loading model artifacts: {e}. Please ensure 'employee_promotion_model.json', 'scaler.pkl', and 'feature_columns.pkl' are in the same directory.")
-        st.stop()
+import xgboost as xgb  # تأكد إنه موجود في الأول
 
-model, scaler, feature_columns = load_model_artifacts()
+@st.cache_resource
+def load_artifacts():
+    # حمل المودل كـ Booster مباشرة (أفضل للـ JSON ومتوافق عبر الإصدارات)
+    booster = xgb.Booster()
+    booster.load_model('employee_promotion_model.json')
+    
+    scaler = joblib.load('scaler.pkl')
+    feature_columns = joblib.load('feature_columns.pkl')
+    
+    return booster, scaler, feature_columns
+
+booster, scaler, feature_columns = load_artifacts()
 
 
 # Input fields
@@ -94,8 +95,10 @@ for col in feature_columns:
 
 # Make prediction
 if st.button("Predict Promotion"):
-    prediction = model.predict(final_df)[0]
-    prediction_proba = model.predict_proba(final_df)[0]
+    # Prediction مع Booster
+dmat = xgb.DMatrix(df)  # لازم تحول الـ DataFrame إلى DMatrix
+pred = int(booster.predict(dmat)[0] > 0.5)  # عشان binary classification
+prob = booster.predict(dmat)[0]  # الاحتمال الخام (sigmoid output للـ class 1)
 
     st.subheader("Prediction Result:")
     if prediction == 1:
