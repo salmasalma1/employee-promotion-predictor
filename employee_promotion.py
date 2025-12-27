@@ -45,6 +45,7 @@ with col1:
     gender = st.selectbox("Gender", ['f', 'm'])
     recruitment_channel = st.selectbox("Recruitment Channel", ['sourcing', 'other', 'referred'])
     no_of_trainings = st.number_input("Number of Trainings", min_value=1, max_value=10, value=1)
+    kpis_met = st.selectbox("KPIs_met >80%?", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")  # جديد!!
 
 with col2:
     region = st.selectbox("Region",
@@ -69,7 +70,8 @@ if st.button("🔮 Predict Promotion", type="primary"):
             'previous_year_rating': float(previous_year_rating),
             'length_of_service': length_of_service,
             'awards_won': awards_won,
-            'avg_training_score': avg_training_score
+            'avg_training_score': avg_training_score,
+            'KPIs_met >80%': kpis_met  # جديد!!
         }
         df = pd.DataFrame([data])
 
