@@ -51,8 +51,10 @@ st.markdown("""
 # تحميل الملفات
 @st.cache_resource
 def load_model():
-    model = XGBClassifier(class_weight='balanced', random_state=42)
-    # تدريب بسيط أو افتراضي
+    booster = xgb.Booster()
+    booster.load_model('model.json')  # <-- غيرت الاسم لـ model.json زي ما طلبتي
+    model = xgb.XGBClassifier()
+    model._Booster = booster
     return model
 
 @st.cache_resource
