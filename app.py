@@ -87,10 +87,10 @@ for col in feature_columns:
 
 # --- تنفيذ التوقع ---
 if st.button("Predict Promotion"):
-    # تحويل البيانات لصيغة DMatrix (شرط أساسي لاستخدام Booster)
+    # تحويل البيانات لصيغة DMatrix (ضروري لاستخدام Booster)
     dmatrix_input = xgb.DMatrix(final_df)
     
-    # التوقع هنا يعطي احتمالية (Probability) بين 0 و 1
+    # التوقع هنا يعطي احتمالية (Probability)
     prob = model.predict(dmatrix_input)[0]
     prediction = 1 if prob > 0.5 else 0
 
