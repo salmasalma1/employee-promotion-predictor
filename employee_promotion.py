@@ -71,7 +71,8 @@ if st.button("🔮 Predict Promotion", type="primary"):
             'length_of_service': length_of_service,
             'awards_won': awards_won,
             'avg_training_score': avg_training_score,
-            'KPIs_met >80%': kpis_met  # جديد!!
+            'KPIs_met >80%': kpis_met,
+                        'KPIs_met >80%_1': kpis_met
         }
         df = pd.DataFrame([data])
 
