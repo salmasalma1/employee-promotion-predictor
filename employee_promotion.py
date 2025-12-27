@@ -88,11 +88,11 @@ if st.button("🔮 Predict Promotion", type="primary"):
 
         for col in required_columns:
             if col not in df.columns:
-                df[col] = 0
+                df[col] = 0.0
         df = df[required_columns]
 
         data_array = df.values.astype('float32')
-        dmatrix = xgb.DMatrix(data_array)
+        dmatrix = xgb.DMatrix(data_array, feature_names=None)
 
         raw_margin = model.get_booster().predict(dmatrix, output_margin=True)[0]
         prob = 1 / (1 + np.exp(-raw_margin))
