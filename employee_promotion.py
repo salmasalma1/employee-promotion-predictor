@@ -92,9 +92,9 @@ if st.button("🔮 Predict Promotion", type="primary"):
         df = df[required_columns]
 
         data_array = df.values.astype('float32')
-        dmatrix = xgb.DMatrix(data_array, feature_names=None)
+        dmatrix = xgb.DMatrix(data_array)
 
-        raw_margin = model.get_booster().predict(dmatrix, output_margin=True)[0]
+        raw_margin = model.get_booster().predict(dmatrix, output_margin=True, validate_features=False)[0]
         prob = 1 / (1 + np.exp(-raw_margin))
         pred = 1 if prob > 0.5 else 0
 
