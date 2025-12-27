@@ -52,7 +52,7 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     booster = xgb.Booster()
-    booster.load_model('employee_promotion_model.json')  # غيري الاسم لو الملف عندك اسمه مختلف (مثل employee_promotion_model (1).json)
+    booster.load_model('employee_promotion_model (1).json')  # غيري الاسم لو الملف عندك اسمه مختلف (مثل employee_promotion_model (1).json)
     model = xgb.XGBClassifier()
     model._Booster = booster
     return model
