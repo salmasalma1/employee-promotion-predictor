@@ -14,53 +14,21 @@ st.write("Enter employee details to predict their promotion status.")
 @st.cache_resource
 def load_model_artifacts():
     try:
-        # 1. تحميل الموديل باستخدام Booster لتجنب مشاكل الإصدارات
+        # 1. تحميل الموديل باستخدام Booster لتجنب TypeError
         model = xgb.Booster()
         model.load_model('employee_promotion_model.json')
         
-        # --- Scaling (الضربة القاضية للأيرور) ---
+        # 2. تحميل الـ Scaler وأسماء الأعمدة
+        scaler = joblib.load('scaler.pkl')
+        feature_columns = joblib.load('feature_columns.pkl')
+        return model, scaler, feature_columns
+    except Exception as e:
+        st.error(f"Error loading model artifacts: {e}")
+        st.stop()
 
-# 1. القائمة دي هي بالظبط الأعمدة اللي السكيلر اتدرب عليها في كولاب وبنفس الترتيب
-# --- Scaling (الضربة القاضية للأيرور) ---
+model, scaler, feature_columns = load_model_artifacts()
 
-# 1. القائمة دي هي بالظبط الأعمدة اللي السكيلر اتدرب عليها في كولاب وبنفس الترتيب
-scaler_features_ordered = [
-    'age', 'gender', 'department', 'region', 'education',
-    'recruitment_channel', 'no_of_trainings', 'previous_year_rating',
-    'length_of_service', 'awards_won', 'avg_training_score', 'is_promoted',
-    'age_log', 'length_of_service_log'
-]
-
-# 2. تجهيز DataFrame مؤقت يطابق توقعات السكيلر (14 عمود)
-temp_df_for_scaler = pd.DataFrame(columns=scaler_features_ordered)
-
-# نملأ البيانات من المدخلات الحالية
-# لاحظ أننا نضع البيانات الخام (قبل الـ encoding) لأن السكيلر تدرب عليها هكذا
-for col in scaler_features_ordered:
-    if col in df_input.columns:
-        temp_df_for_scaler.loc[0, col] = df_input.loc[0, col]
-    else:
-        temp_df_for_scaler.loc[0, col] = 0  # أي عمود ناقص (مثل is_promoted) نضع مكانه 0
-
-# 3. التحجيم (Scaling) باستخدام القيم فقط لتجنب أي تعارض أسماء
-try:
-    # السكيلر هيشوف 14 عمود بالظبط زي ما هو متعود
-    scaled_data = scaler.transform(temp_df_for_scaler.values)
-    
-    # تحويل النتيجة لـ DataFrame عشان نسحب منها القيم اللي محتاجينها للموديل
-    temp_df_scaled = pd.DataFrame(scaled_data, columns=scaler_features_ordered)
-    
-    # تحديث القيم الرقمية فقط في df_encoded اللي هيروح للموديل
-    cols_to_update = ['age', 'no_of_trainings', 'previous_year_rating', 'length_of_service', 'avg_training_score', 'age_log', 'length_of_service_log']
-    for col in cols_to_update:
-        df_encoded[col] = temp_df_scaled[col].values
-        
-except Exception as e:
-    st.error(f"Error in Scaling: {e}")
-    st.write("السكيلر يتوقع عدد أعمدة معين، تأكد من ملف scaler.pkl")
-    st.stop()
-
-# --- واجهة مدخلات المستخدم ---
+# --- واجهة المدخلات (Sidebar) ---
 with st.sidebar:
     st.header("Employee Details")
     department = st.selectbox("Department", ['Sales & Marketing', 'Operations', 'Technology', 'Analytics', 'Procurement', 'Other'])
@@ -76,64 +44,74 @@ with st.sidebar:
     awards_won = st.selectbox("Awards Won (0=No, 1=Yes)", [0, 1])
     avg_training_score = st.slider("Average Training Score", 40, 99, 60)
 
-# تجهيز البيانات المدخلة
+# تجهيز البيانات الخام
 input_data = {
-    'department': department, 'region': region, 'education': education,
-    'gender': gender, 'recruitment_channel': recruitment_channel,
-    'no_of_trainings': no_of_trainings, 'age': age,
-    'previous_year_rating': previous_year_rating, 'length_of_service': length_of_service,
-    'awards_won': awards_won, 'avg_training_score': avg_training_score
+    'age': age, 'gender': gender, 'department': department, 'region': region, 
+    'education': education, 'recruitment_channel': recruitment_channel, 
+    'no_of_trainings': no_of_trainings, 'previous_year_rating': previous_year_rating,
+    'length_of_service': length_of_service, 'awards_won': awards_won, 
+    'avg_training_score': avg_training_score
 }
 df_input = pd.DataFrame([input_data])
 
 # --- Feature Engineering ---
-# حساب الـ Log features كما في تدريبك الأصلي
 df_input['age_log'] = np.log1p(df_input['age'])
 df_input['length_of_service_log'] = np.log1p(df_input['length_of_service'])
+df_input['is_promoted'] = 0 # عمود وهمي لأن السكيلر قد يطلبه
 
-# هندسة ميزات إضافية
-df_input['age_group'] = pd.cut(df_input['age'], bins=[0, 30, 40, 50, 100], labels=['<30', '30-40', '40-50', '>50'], right=False)
-df_input['high_training_score'] = (df_input['avg_training_score'] > 80).astype(int)
-df_input['has_awards'] = df_input['awards_won']
-df_input['long_service_high_rating'] = ((df_input['length_of_service'] > 7) & (df_input['previous_year_rating'] >= 4)).astype(int)
-
-# One-Hot Encoding
-categorical_features_for_ohe = ['department', 'region', 'education', 'gender', 'recruitment_channel', 'age_group']
-df_encoded = pd.get_dummies(df_input, columns=categorical_features_for_ohe, drop_first=True)
-
-# --- Scaling (حل مشكلة ValueError) ---
-# الترتيب ده لازم يطابق اللي حصل في كولاب
-numerical_features_to_scale = [
-    'age', 'no_of_trainings', 'previous_year_rating', 
-    'length_of_service', 'awards_won', 'avg_training_score',
+# --- Scaling (حل مشكلة عدد الأعمدة 14) ---
+# القائمة الكاملة اللي السكيلر اتدرب عليها في كولاب بالترتيب
+scaler_features_ordered = [
+    'age', 'gender', 'department', 'region', 'education',
+    'recruitment_channel', 'no_of_trainings', 'previous_year_rating',
+    'length_of_service', 'awards_won', 'avg_training_score', 'is_promoted',
     'age_log', 'length_of_service_log'
 ]
 
-# التأكد من وجود كل الأعمدة وترتيبها
-for col in numerical_features_to_scale:
-    if col not in df_encoded.columns:
-        df_encoded[col] = 0.0
+try:
+    # إنشاء DataFrame مؤقت فيه الـ 14 عمود بالظبط
+    temp_df = pd.DataFrame(columns=scaler_features_ordered)
+    for col in scaler_features_ordered:
+        temp_df.loc[0, col] = df_input.loc[0, col] if col in df_input.columns else 0
+    
+    # تحويل القيم (Scaling)
+    scaled_values = scaler.transform(temp_df.values)
+    temp_df_scaled = pd.DataFrame(scaled_data, columns=scaler_features_ordered)
+    
+    # تحضير البيانات لـ One-Hot Encoding بعد الـ Scaling
+    # (نستخدم البيانات المحجمة للقيم الرقمية)
+    df_for_encode = df_input.copy()
+    num_cols = ['age', 'no_of_trainings', 'previous_year_rating', 'length_of_service', 'avg_training_score', 'age_log', 'length_of_service_log']
+    for col in num_cols:
+        df_for_encode[col] = temp_df_scaled[col].values
 
-# استخدام .values لتخطي فحص أسماء الأعمدة في السكيلر
-scaled_values = scaler.transform(df_encoded[numerical_features_to_scale].values)
-df_encoded[numerical_features_to_scale] = scaled_values
+    # One-Hot Encoding
+    df_for_encode['age_group'] = pd.cut(df_input['age'], bins=[0, 30, 40, 50, 100], labels=['<30', '30-40', '40-50', '>50'], right=False)
+    categorical_features = ['department', 'region', 'education', 'gender', 'recruitment_channel', 'age_group']
+    df_encoded = pd.get_dummies(df_for_encode, columns=categorical_features, drop_first=True)
 
-# محاذاة الأعمدة مع الموديل
-final_df = pd.DataFrame(columns=feature_columns)
-for col in feature_columns:
-    final_df[col] = df_encoded[col] if col in df_encoded.columns else 0
+    # إضافة ميزات إضافية قد يحتاجها الموديل
+    df_encoded['high_training_score'] = (df_input['avg_training_score'] > 80).astype(int)
+    df_encoded['has_awards'] = df_input['awards_won']
+    df_encoded['long_service_high_rating'] = ((df_input['length_of_service'] > 7) & (df_input['previous_year_rating'] >= 4)).astype(int)
 
-# --- التوقع ---
+    # محاذاة الأعمدة مع الموديل (feature_columns)
+    final_df = pd.DataFrame(columns=feature_columns)
+    for col in feature_columns:
+        final_df[col] = df_encoded[col] if col in df_encoded.columns else 0
+
+except Exception as e:
+    st.error(f"Scaling/Encoding Error: {e}")
+    st.stop()
+
+# --- Prediction ---
 if st.button("Predict Promotion"):
-    # استخدام DMatrix للـ Booster
     dmatrix_input = xgb.DMatrix(final_df)
     prob = model.predict(dmatrix_input)[0]
     prediction = 1 if prob > 0.5 else 0
 
-    st.subheader("Prediction Result:")
+    st.subheader("Result:")
     if prediction == 1:
-        st.success(f"**Yes, the employee is likely to be promoted!** 🚀")
-        st.write(f"Probability: **{prob*100:.2f}%**")
+        st.success(f"**Promoted!** 🚀 (Prob: {prob*100:.2f}%)")
     else:
-        st.error(f"**No, the employee is likely NOT to be promoted.** 😔")
-        st.write(f"Probability: **{(1-prob)*100:.2f}%**")
+        st.error(f"**Not Promoted.** 😔 (Prob: {prob*100:.2f}%)")
