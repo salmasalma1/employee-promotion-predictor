@@ -14,7 +14,7 @@ st.write("Enter employee details to predict their promotion status.")
 @st.cache_resource
 def load_model_artifacts():
     try:
-        # 1. تحميل الموديل باستخدام Booster لتجنب TypeError
+        # 1. تحميل الموديل باستخدام Booster لتجنب مشاكل الإصدارات
         model = xgb.Booster()
         model.load_model('employee_promotion_model.json')
         
@@ -28,7 +28,7 @@ def load_model_artifacts():
 
 model, scaler, feature_columns = load_model_artifacts()
 
-# --- واجهة المدخلات (Sidebar) ---
+# --- واجهة مدخلات المستخدم ---
 with st.sidebar:
     st.header("Employee Details")
     department = st.selectbox("Department", ['Sales & Marketing', 'Operations', 'Technology', 'Analytics', 'Procurement', 'Other'])
@@ -44,7 +44,7 @@ with st.sidebar:
     awards_won = st.selectbox("Awards Won (0=No, 1=Yes)", [0, 1])
     avg_training_score = st.slider("Average Training Score", 40, 99, 60)
 
-# تجهيز البيانات
+# تجهيز البيانات المدخلة
 input_data = {
     'department': department, 'region': region, 'education': education,
     'gender': gender, 'recruitment_channel': recruitment_channel,
@@ -55,11 +55,11 @@ input_data = {
 df_input = pd.DataFrame([input_data])
 
 # --- Feature Engineering ---
-# حساب الـ Log features كما في الكولاب الخاص بك
+# حساب الـ Log features كما في تدريبك الأصلي
 df_input['age_log'] = np.log1p(df_input['age'])
 df_input['length_of_service_log'] = np.log1p(df_input['length_of_service'])
 
-# هندسة ميزات إضافية (اختياري حسب موديلك)
+# هندسة ميزات إضافية
 df_input['age_group'] = pd.cut(df_input['age'], bins=[0, 30, 40, 50, 100], labels=['<30', '30-40', '40-50', '>50'], right=False)
 df_input['high_training_score'] = (df_input['avg_training_score'] > 80).astype(int)
 df_input['has_awards'] = df_input['awards_won']
@@ -70,7 +70,7 @@ categorical_features_for_ohe = ['department', 'region', 'education', 'gender', '
 df_encoded = pd.get_dummies(df_input, columns=categorical_features_for_ohe, drop_first=True)
 
 # --- Scaling (حل مشكلة ValueError) ---
-# الترتيب بناءً على الـ Index اللي بعتهولي
+# الترتيب ده لازم يطابق اللي حصل في كولاب
 numerical_features_to_scale = [
     'age', 'no_of_trainings', 'previous_year_rating', 
     'length_of_service', 'awards_won', 'avg_training_score',
@@ -82,7 +82,7 @@ for col in numerical_features_to_scale:
     if col not in df_encoded.columns:
         df_encoded[col] = 0.0
 
-# استخدام .values لتخطي فحص الأسماء في السكيلر
+# استخدام .values لتخطي فحص أسماء الأعمدة في السكيلر
 scaled_values = scaler.transform(df_encoded[numerical_features_to_scale].values)
 df_encoded[numerical_features_to_scale] = scaled_values
 
@@ -101,7 +101,7 @@ if st.button("Predict Promotion"):
     st.subheader("Prediction Result:")
     if prediction == 1:
         st.success(f"**Yes, the employee is likely to be promoted!** 🚀")
-        st.write(f"Probability of Promotion: **{prob*100:.2f}%**")
+        st.write(f"Probability: **{prob*100:.2f}%**")
     else:
         st.error(f"**No, the employee is likely NOT to be promoted.** 😔")
         st.write(f"Probability: **{(1-prob)*100:.2f}%**")
