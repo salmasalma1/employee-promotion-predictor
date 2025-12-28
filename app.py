@@ -21,6 +21,9 @@ def load_model_artifacts():
         # --- Scaling (الضربة القاضية للأيرور) ---
 
 # 1. القائمة دي هي بالظبط الأعمدة اللي السكيلر اتدرب عليها في كولاب وبنفس الترتيب
+# --- Scaling (الضربة القاضية للأيرور) ---
+
+# 1. القائمة دي هي بالظبط الأعمدة اللي السكيلر اتدرب عليها في كولاب وبنفس الترتيب
 scaler_features_ordered = [
     'age', 'gender', 'department', 'region', 'education',
     'recruitment_channel', 'no_of_trainings', 'previous_year_rating',
@@ -28,31 +31,33 @@ scaler_features_ordered = [
     'age_log', 'length_of_service_log'
 ]
 
-# 2. تجهيز DataFrame مؤقت يطابق توقعات السكيلر
+# 2. تجهيز DataFrame مؤقت يطابق توقعات السكيلر (14 عمود)
 temp_df_for_scaler = pd.DataFrame(columns=scaler_features_ordered)
 
 # نملأ البيانات من المدخلات الحالية
+# لاحظ أننا نضع البيانات الخام (قبل الـ encoding) لأن السكيلر تدرب عليها هكذا
 for col in scaler_features_ordered:
     if col in df_input.columns:
-        temp_df_for_scaler[col] = df_input[col]
+        temp_df_for_scaler.loc[0, col] = df_input.loc[0, col]
     else:
-        temp_df_for_scaler[col] = 0  # أي عمود ناقص نضع مكانه 0
+        temp_df_for_scaler.loc[0, col] = 0  # أي عمود ناقص (مثل is_promoted) نضع مكانه 0
 
 # 3. التحجيم (Scaling) باستخدام القيم فقط لتجنب أي تعارض أسماء
 try:
-    # السكيلر هيشوف 14 عمود بالظبط زي ما هو عايز
+    # السكيلر هيشوف 14 عمود بالظبط زي ما هو متعود
     scaled_data = scaler.transform(temp_df_for_scaler.values)
     
-    # تحويل النتيجة لـ DataFrame عشان نسحب منها القيم اللي محتاجينها
+    # تحويل النتيجة لـ DataFrame عشان نسحب منها القيم اللي محتاجينها للموديل
     temp_df_scaled = pd.DataFrame(scaled_data, columns=scaler_features_ordered)
     
-    # تحديث القيم في df_encoded اللي بنستخدمه للموديل
-    for col in ['age', 'no_of_trainings', 'previous_year_rating', 'length_of_service', 'avg_training_score', 'age_log', 'length_of_service_log']:
+    # تحديث القيم الرقمية فقط في df_encoded اللي هيروح للموديل
+    cols_to_update = ['age', 'no_of_trainings', 'previous_year_rating', 'length_of_service', 'avg_training_score', 'age_log', 'length_of_service_log']
+    for col in cols_to_update:
         df_encoded[col] = temp_df_scaled[col].values
         
 except Exception as e:
     st.error(f"Error in Scaling: {e}")
-    st.write("السكيلر يتوقع 14 عمود، تأكد من ملف scaler.pkl")
+    st.write("السكيلر يتوقع عدد أعمدة معين، تأكد من ملف scaler.pkl")
     st.stop()
 
 # --- واجهة مدخلات المستخدم ---
