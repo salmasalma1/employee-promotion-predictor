@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib 
 import xgboost as xgb
+import os
 
 # --- 1. إعدادات الصفحة --- 
 st.set_page_config(page_title="Employee Promotion Predictor", layout="wide")
@@ -13,22 +14,34 @@ st.write("Enter employee details to predict their promotion status.")
 # --- 2. تحميل الموديل والملفات ---
 @st.cache_resource
 def load_model_artifacts():
+    model_path = 'employee_promotion_model.json'
+    
+    # التأكد من وجود الملف وحجمه
+    if not os.path.exists(model_path) or os.path.getsize(model_path) == 0:
+        st.error(f"❌ الملف {model_path} غير موجود أو حجمه صفر على السيرفر!")
+        st.stop()
+
     try:
-        # تحميل الموديل كـ Booster لتجنب مشاكل الـ Wrapper
-        model = xgb.Booster()
-        model.load_model('employee_promotion_model.json')
-        
-        # تحميل الـ Scaler وأسماء الأعمدة النهائية
         scaler = joblib.load('scaler.pkl')
         feature_columns = joblib.load('feature_columns.pkl')
+        
+        # محاولة تحميل الموديل بالطريقة القياسية
+        model = xgb.XGBClassifier()
+        model.load_model(model_path)
         return model, scaler, feature_columns
     except Exception as e:
-        st.error(f"Error loading artifacts: {e}")
-        st.stop()
+        try:
+            # محاولة بديلة لو الطريقة الأولى فشلت
+            model = xgb.Booster()
+            model.load_model(model_path)
+            return model, scaler, feature_columns
+        except Exception as e2:
+            st.error(f"❌ فشل تحميل الموديل: {e2}")
+            st.stop()
 
 model, scaler, feature_columns = load_model_artifacts()
 
-# --- 3. واجهة مدخلات المستخدم (Sidebar) ---
+# --- 3. واجهة مدخلات المستخدم ---
 with st.sidebar:
     st.header("Employee Details")
     department = st.selectbox("Department", ['Sales & Marketing', 'Operations', 'Technology', 'Analytics', 'Procurement', 'Other'])
@@ -44,33 +57,22 @@ with st.sidebar:
     awards_won = st.selectbox("Awards Won (0=No, 1=Yes)", [0, 1])
     avg_training_score = st.slider("Average Training Score", 40, 99, 60)
 
-# --- 4. الـ Scaling (لـ 6 أعمدة رقمية فقط) ---
-# الترتيب ده هو اللي السكيلر متوقعه بناءً على تدريبك
-cols_for_scaler = [
-    'age', 'no_of_trainings', 'previous_year_rating', 
-    'length_of_service', 'awards_won', 'avg_training_score'
-]
-
-# تجهيز البيانات الرقمية الخام
-df_raw_num = pd.DataFrame([[age, no_of_trainings, previous_year_rating, length_of_service, awards_won, avg_training_score]], 
-                          columns=cols_for_scaler)
+# --- 4. معالجة البيانات ---
+# السكيلر متوقع 6 أعمدة رقمية
+cols_for_scaler = ['age', 'no_of_trainings', 'previous_year_rating', 'length_of_service', 'awards_won', 'avg_training_score']
+df_num = pd.DataFrame([[age, no_of_trainings, previous_year_rating, length_of_service, awards_won, avg_training_score]], columns=cols_for_scaler)
 
 try:
-    # عمل الـ Scaling للـ 6 أعمدة فقط (استخدام .values لتجنب تعارض الأسماء)
-    scaled_data = scaler.transform(df_raw_num.values)
+    scaled_data = scaler.transform(df_num.values)
     scaled_values = dict(zip(cols_for_scaler, scaled_data[0]))
-    
-    # حساب ميزات الـ Log (إضافية للموديل)
+    # إضافة ميزات الـ Log
     scaled_values['age_log'] = np.log1p(age)
     scaled_values['length_of_service_log'] = np.log1p(length_of_service)
-    
 except Exception as e:
     st.error(f"Scaling Error: {e}")
-    st.info("تأكد أن السكيلر تم تدريبه على هذه الأعمدة الستة بالترتيب الصحيح.")
     st.stop()
 
-# --- 5. تجهيز البيانات النهائية (One-Hot Encoding) ---
-# تجميع البيانات المحجمة مع البيانات النصية
+# بناء الـ DataFrame النهائي للموديل
 input_combined = {
     'department': department, 'region': region, 'education': education,
     'gender': gender, 'recruitment_channel': recruitment_channel,
@@ -78,33 +80,29 @@ input_combined = {
     **scaled_values
 }
 
-df_ready = pd.DataFrame([input_combined])
-df_encoded = pd.get_dummies(df_ready)
+df_final = pd.get_dummies(pd.DataFrame([input_combined]))
+df_final['high_training_score'] = (avg_training_score > 80).astype(int)
+df_final['has_awards'] = awards_won
+df_final['long_service_high_rating'] = ((length_of_service > 7) & (previous_year_rating >= 4)).astype(int)
 
-# إضافة ميزات إضافية قد يطلبها الموديل بناءً على feature_columns
-df_encoded['high_training_score'] = (avg_training_score > 80).astype(int)
-df_encoded['has_awards'] = awards_won
-df_encoded['long_service_high_rating'] = ((length_of_service > 7) & (previous_year_rating >= 4)).astype(int)
-
-# مطابقة الأعمدة النهائية مع ما يتوقعه الموديل بالظبط
-final_df = pd.DataFrame(columns=feature_columns)
+# ضبط الأعمدة
+final_input = pd.DataFrame(columns=feature_columns)
 for col in feature_columns:
-    if col in df_encoded.columns:
-        final_df[col] = df_encoded[col]
-    else:
-        final_df[col] = 0
+    final_input[col] = df_final[col] if col in df_final.columns else 0
 
-# --- 6. زر التوقع ---
+# --- 5. التوقع ---
 if st.button("Predict Promotion"):
-    # استخدام DMatrix لأن الموديل محمل كـ Booster
-    dmatrix_input = xgb.DMatrix(final_df)
-    prob = model.predict(dmatrix_input)[0]
+    # تحديد طريقة التوقع بناءً على نوع الموديل المحمل
+    if isinstance(model, xgb.XGBClassifier):
+        prob = model.predict_proba(final_input)[0][1]
+    else:
+        dmat = xgb.DMatrix(final_input)
+        prob = model.predict(dmat)[0]
+    
     prediction = 1 if prob > 0.5 else 0
 
     st.subheader("Result:")
     if prediction == 1:
-        st.success(f"**Yes! The employee is likely to be promoted.** 🚀")
-        st.write(f"Confidence Level: **{prob*100:.2f}%**")
+        st.success(f"**Yes! Likely to be promoted.** 🚀 (Prob: {prob*100:.2f}%)")
     else:
-        st.error(f"**No. Promotion is not likely at this time.** 😔")
-        st.write(f"Probability of Promotion: **{prob*100:.2f}%**")
+        st.error(f"**No. Not likely to be promoted.** 😔 (Prob: {prob*100:.2f}%)")
